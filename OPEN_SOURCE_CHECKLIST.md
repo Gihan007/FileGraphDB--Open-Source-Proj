@@ -39,6 +39,9 @@ Replace these placeholders before publishing:
 
 Suggested labels: `good first issue`, `help wanted`, `documentation`.
 
+Use `ROADMAP.md` to create more contributor-friendly issues for intermediate
+and advanced work.
+
 ## Announcement Draft
 
 I created an open-source Python library called FileGraphDB.

@@ -63,6 +63,9 @@ Good first contribution ideas:
 - Add docstrings to public methods.
 - Improve Windows setup notes.
 
+For a larger list of beginner, intermediate, and advanced tasks, see
+`ROADMAP.md`.
+
 ## Development Notes
 
 Generated graph databases named `.filegraphdb.sqlite` should not be committed.

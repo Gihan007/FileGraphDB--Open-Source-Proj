@@ -499,12 +499,16 @@ More evaluation benchmarks
 More scalable graph construction for very large folders
 ```
 
+See `ROADMAP.md` for contributor-friendly task ideas, acceptance criteria, and
+larger development directions.
+
 ## Contributing
 
 We welcome contributions. Good first tasks include improving documentation,
 adding examples, expanding tests, fixing bugs, and suggesting focused features.
 
-See `CONTRIBUTING.md` for setup instructions and pull request guidelines.
+See `CONTRIBUTING.md` for setup instructions and pull request guidelines. See
+`ROADMAP.md` for tasks you can pick up.
 
 ## License
 
