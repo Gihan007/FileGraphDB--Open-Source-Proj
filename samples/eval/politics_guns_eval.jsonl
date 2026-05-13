@@ -1,0 +1,4 @@
+{"query":"US UK handgun deaths statistics comparison","expected_files":["53294","53327","53353"],"expected_terms":["UK","US","handgun-related deaths","FBI statistics"]}
+{"query":"Second Amendment right to keep and bear arms","expected_files":["53302","53332","54163"],"expected_terms":["Second Amendment","keep and bear","right"]}
+{"query":"Brady Bill waiting period background check","expected_files":["53296","53308","53323"],"expected_terms":["Brady Bill","waiting period","background check"]}
+{"query":"Waco Branch Davidian raid compound attacked","expected_files":["53297","53315","53361"],"expected_terms":["Waco","Branch Davidians","Compound"]}

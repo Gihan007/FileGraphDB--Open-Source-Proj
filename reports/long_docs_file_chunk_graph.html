@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FileGraphDB Visualization</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --line: #d0d5dd;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      display: grid;
+      grid-template-columns: 320px 1fr;
+    }
+    aside {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      padding: 18px;
+      overflow: auto;
+    }
+    main { position: relative; overflow: hidden; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    h2 { font-size: 13px; margin: 18px 0 8px; text-transform: uppercase; color: var(--muted); }
+    code { font-size: 12px; word-break: break-all; }
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      margin: 8px 0;
+      background: white;
+      color: var(--text);
+    }
+    .stat {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      border-bottom: 1px solid #eef2f6;
+      padding: 7px 0;
+    }
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    .swatch { width: 12px; height: 12px; border-radius: 999px; }
+    #details {
+      white-space: pre-wrap;
+      background: #f9fafb;
+      border: 1px solid #eef2f6;
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 140px;
+      max-height: 280px;
+      overflow: auto;
+    }
+    svg { width: 100%; height: 100vh; display: block; }
+    .link { stroke-opacity: 0.32; cursor: pointer; }
+    .node { stroke: #fff; stroke-width: 1.5px; cursor: pointer; }
+    .node:hover { stroke: #111827; stroke-width: 2px; }
+    .label {
+      font-size: 10px;
+      fill: #344054;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 3px;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .hidden { opacity: 0.06; }
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(17, 24, 39, 0.92);
+      color: white;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      max-width: 360px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>FileGraphDB</h1>
+    <div><code>C:\Users\user\Desktop\file based graph proj\samples\long_docs\.filegraphdb.sqlite</code></div>
+
+    <h2>Controls</h2>
+    <input id="search" placeholder="Filter files by name..." />
+    <select id="typeFilter">
+      <option value="ALL">All relationship types</option>
+    </select>
+
+    <h2>Stats</h2>
+    <div class="stat"><span>Nodes</span><strong id="nodeCount"></strong></div>
+    <div class="stat"><span>Edges</span><strong id="edgeCount"></strong></div>
+    <div class="stat"><span>Visible nodes</span><strong id="visibleNodeCount"></strong></div>
+    <div class="stat"><span>Visible edges</span><strong id="visibleEdgeCount"></strong></div>
+
+    <h2>Legend</h2>
+    <div id="legend"></div>
+
+    <h2>Selected</h2>
+    <div id="details">Click a bubble or edge to inspect it.</div>
+  </aside>
+
+  <main>
+    <svg id="graph"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </main>
+
+  <script>
+    const graph = {"nodes": [{"id": "12db2ff2fc476825131197cfa9f449f68bc6a943", "path": "huge_report.txt#chunk-0003", "node_type": "Chunk", "degree": 6, "keywords": ["shipment", "operational", "update evidence", "schedule", "delivery", "impact"], "topics": ["shipment", "operational", "update evidence", "schedule", "delivery", "impact"], "entities": ["Acme", "Priya", "Section"]}, {"id": "1d293563eac3908a3010aad7ca13db1b06172e35", "path": "huge_report.txt#chunk-0004", "node_type": "Chunk", "degree": 8, "keywords": ["shipment", "evidence report", "update evidence", "schedule", "delivery", "impact"], "topics": ["shipment", "evidence report", "update evidence", "schedule", "delivery", "impact"], "entities": ["Acme", "Priya", "Section"]}, {"id": "34cbf797874356c72f0929daf5f54a44f5711158", "path": "huge_report.txt#chunk-0010", "node_type": "Chunk", "degree": 5, "keywords": ["shipment", "evidence report", "report discusses", "delivery", "impact", "mitigation"], "topics": ["shipment", "evidence report", "report discusses", "delivery", "impact", "mitigation"], "entities": ["Acme", "Priya", "Section"]}, {"id": "43eeaf2b12bc67ed6299ff09a1a30738616a35e5", "path": "huge_report.txt#chunk-0002", "node_type": "Chunk", "degree": 5, "keywords": ["shipment", "evidence report", "report discusses", "delivery", "impact", "mitigation"], "topics": ["shipment", "evidence report", "report discusses", "delivery", "impact", "mitigation"], "entities": ["Acme", "Priya", "Section"]}, {"id": "4c9caef71e783399c28f36cdc7a31771842cfd55", "path": "huge_report.txt#chunk-0007", "node_type": "Chunk", "degree": 5, "keywords": ["shipment", "operational", "update evidence", "schedule", "delivery", "impact"], "topics": ["shipment", "operational", "update evidence", "schedule", "delivery", "impact"], "entities": ["Acme", "Priya", "Section"]}, {"id": "506c04a15d439f9e097b6dd6bdaab72fa84c970b", "path": "huge_report.txt#chunk-0011", "node_type": "Chunk", "degree": 5, "keywords": ["shipment", "operational", "schedule", "risk", "hardware", "delivery"], "topics": ["shipment", "operational", "schedule", "risk", "hardware", "delivery"], "entities": ["Acme", "Priya", "Section"]}, {"id": "6067246d9edd72618e2b1127bcdbf84401bc784f", "path": "huge_report.txt#chunk-0009", "node_type": "Chunk", "degree": 6, "keywords": ["shipment", "evidence report", "update evidence", "schedule", "delivery", "impact"], "topics": ["shipment", "evidence report", "update evidence", "schedule", "delivery", "impact"], "entities": ["Acme", "Priya", "Section"]}, {"id": "8749d5545c734a0589071d4dc9ef24f9ed72b5bd", "path": "huge_report.txt#chunk-0006", "node_type": "Chunk", "degree": 5, "keywords": ["shipment", "evidence report", "report discusses", "delivery", "impact", "mitigation"], "topics": ["shipment", "evidence report", "report discusses", "delivery", "impact", "mitigation"], "entities": ["Acme", "Priya", "Section"]}, {"id": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "path": "huge_report.txt", "node_type": "File", "degree": 12, "keywords": ["section supplier", "shipment", "launch", "update", "evidence", "report"], "topics": ["section supplier", "shipment", "launch", "update", "evidence", "report"], "entities": ["Acme", "Priya", "Section"]}, {"id": "a290071ed3c19b90dd71704acaaae0b0607b6617", "path": "huge_report.txt#chunk-0008", "node_type": "Chunk", "degree": 8, "keywords": ["shipment", "evidence report", "update evidence", "schedule", "delivery", "impact"], "topics": ["shipment", "evidence report", "update evidence", "schedule", "delivery", "impact"], "entities": ["Acme", "Priya", "Section"]}, {"id": "c74c4f3687126aa136ffb24b55f8b4a028e557ae", "path": "delay_report.txt", "node_type": "File", "degree": 1, "keywords": ["shipment priya", "priya vendor", "vendor confirmation", "priya", "delay", "project"], "topics": ["shipment priya", "priya vendor", "vendor confirmation", "priya", "delay", "project"], "entities": ["Acme", "Priya", "Supplier"]}, {"id": "dba0b3cdd9b488ae4a4613002aba53576344798b", "path": "huge_report.txt#chunk-0005", "node_type": "Chunk", "degree": 5, "keywords": ["shipment", "evidence report", "update evidence", "schedule", "delivery", "impact"], "topics": ["shipment", "evidence report", "update evidence", "schedule", "delivery", "impact"], "entities": ["Acme", "Priya", "Section"]}, {"id": "fa8efa79dc0e0a7ab01829753ed02ea89124e9f7", "path": "huge_report.txt#chunk-0001", "node_type": "Chunk", "degree": 5, "keywords": ["section supplier", "shipment", "schedule delivery", "schedule", "delivery", "impact"], "topics": ["section supplier", "shipment", "schedule delivery", "schedule", "delivery", "impact"], "entities": ["Acme", "Priya", "Section"]}], "links": [{"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "fa8efa79dc0e0a7ab01829753ed02ea89124e9f7", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0001", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0001"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "43eeaf2b12bc67ed6299ff09a1a30738616a35e5", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0002", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0002"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "12db2ff2fc476825131197cfa9f449f68bc6a943", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0003", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0003"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "1d293563eac3908a3010aad7ca13db1b06172e35", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0004", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0004"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "dba0b3cdd9b488ae4a4613002aba53576344798b", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0005", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0005"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "8749d5545c734a0589071d4dc9ef24f9ed72b5bd", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0006", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0006"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "4c9caef71e783399c28f36cdc7a31771842cfd55", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0007", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0007"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "a290071ed3c19b90dd71704acaaae0b0607b6617", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0008", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0008"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "6067246d9edd72618e2b1127bcdbf84401bc784f", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0009", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0009"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "34cbf797874356c72f0929daf5f54a44f5711158", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0010", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0010"}, {"source": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "target": "506c04a15d439f9e097b6dd6bdaab72fa84c970b", "source_path": "huge_report.txt", "target_path": "huge_report.txt#chunk-0011", "type": "CONTAINS", "weight": 1.0, "confidence": 1.0, "evidence": "huge_report.txt contains huge_report.txt#chunk-0011"}, {"source": "a290071ed3c19b90dd71704acaaae0b0607b6617", "target": "6067246d9edd72618e2b1127bcdbf84401bc784f", "source_path": "huge_report.txt#chunk-0008", "target_path": "huge_report.txt#chunk-0009", "type": "SHARES_ENTITY", "weight": 0.7842, "confidence": 0.9067, "evidence": "semantic=0.793; keyword=0.747; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "1d293563eac3908a3010aad7ca13db1b06172e35", "target": "dba0b3cdd9b488ae4a4613002aba53576344798b", "source_path": "huge_report.txt#chunk-0004", "target_path": "huge_report.txt#chunk-0005", "type": "SHARES_ENTITY", "weight": 0.7674, "confidence": 0.8946, "evidence": "semantic=0.757; keyword=0.747; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "4c9caef71e783399c28f36cdc7a31771842cfd55", "target": "a290071ed3c19b90dd71704acaaae0b0607b6617", "source_path": "huge_report.txt#chunk-0007", "target_path": "huge_report.txt#chunk-0008", "type": "SHARES_ENTITY", "weight": 0.7531, "confidence": 0.8833, "evidence": "semantic=0.787; keyword=0.748; topic_overlap=0.714; entity_overlap=1.000; shared_topics=delivery, impact, schedule, shipment, update evidence; shared_entities=Acme, Priya, Section"}, {"source": "34cbf797874356c72f0929daf5f54a44f5711158", "target": "506c04a15d439f9e097b6dd6bdaab72fa84c970b", "source_path": "huge_report.txt#chunk-0010", "target_path": "huge_report.txt#chunk-0011", "type": "SHARES_ENTITY", "weight": 0.749, "confidence": 0.8799, "evidence": "semantic=0.878; keyword=0.770; topic_overlap=0.200; entity_overlap=1.000; shared_topics=delivery, shipment; shared_entities=Acme, Priya, Section"}, {"source": "1d293563eac3908a3010aad7ca13db1b06172e35", "target": "6067246d9edd72618e2b1127bcdbf84401bc784f", "source_path": "huge_report.txt#chunk-0004", "target_path": "huge_report.txt#chunk-0009", "type": "SHARES_ENTITY", "weight": 0.7463, "confidence": 0.8777, "evidence": "semantic=0.732; keyword=0.707; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "dba0b3cdd9b488ae4a4613002aba53576344798b", "target": "a290071ed3c19b90dd71704acaaae0b0607b6617", "source_path": "huge_report.txt#chunk-0005", "target_path": "huge_report.txt#chunk-0008", "type": "SHARES_ENTITY", "weight": 0.7458, "confidence": 0.8772, "evidence": "semantic=0.730; keyword=0.707; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "12db2ff2fc476825131197cfa9f449f68bc6a943", "target": "1d293563eac3908a3010aad7ca13db1b06172e35", "source_path": "huge_report.txt#chunk-0003", "target_path": "huge_report.txt#chunk-0004", "type": "SHARES_ENTITY", "weight": 0.7389, "confidence": 0.8711, "evidence": "semantic=0.756; keyword=0.748; topic_overlap=0.714; entity_overlap=1.000; shared_topics=delivery, impact, schedule, shipment, update evidence; shared_entities=Acme, Priya, Section"}, {"source": "43eeaf2b12bc67ed6299ff09a1a30738616a35e5", "target": "34cbf797874356c72f0929daf5f54a44f5711158", "source_path": "huge_report.txt#chunk-0002", "target_path": "huge_report.txt#chunk-0010", "type": "SHARES_ENTITY", "weight": 0.7372, "confidence": 0.8696, "evidence": "semantic=0.712; keyword=0.707; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, mitigation, report discusses; shared_entities=Acme, Priya, Section"}, {"source": "12db2ff2fc476825131197cfa9f449f68bc6a943", "target": "4c9caef71e783399c28f36cdc7a31771842cfd55", "source_path": "huge_report.txt#chunk-0003", "target_path": "huge_report.txt#chunk-0007", "type": "SHARES_ENTITY", "weight": 0.7359, "confidence": 0.8685, "evidence": "semantic=0.709; keyword=0.708; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, impact, operational, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "1d293563eac3908a3010aad7ca13db1b06172e35", "target": "a290071ed3c19b90dd71704acaaae0b0607b6617", "source_path": "huge_report.txt#chunk-0004", "target_path": "huge_report.txt#chunk-0008", "type": "SHARES_ENTITY", "weight": 0.7349, "confidence": 0.8675, "evidence": "semantic=0.706; keyword=0.708; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "6067246d9edd72618e2b1127bcdbf84401bc784f", "target": "34cbf797874356c72f0929daf5f54a44f5711158", "source_path": "huge_report.txt#chunk-0009", "target_path": "huge_report.txt#chunk-0010", "type": "SHARES_ENTITY", "weight": 0.7349, "confidence": 0.8675, "evidence": "semantic=0.801; keyword=0.736; topic_overlap=0.500; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, shipment; shared_entities=Acme, Priya, Section"}, {"source": "dba0b3cdd9b488ae4a4613002aba53576344798b", "target": "6067246d9edd72618e2b1127bcdbf84401bc784f", "source_path": "huge_report.txt#chunk-0005", "target_path": "huge_report.txt#chunk-0009", "type": "SHARES_ENTITY", "weight": 0.7347, "confidence": 0.8673, "evidence": "semantic=0.707; keyword=0.707; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "43eeaf2b12bc67ed6299ff09a1a30738616a35e5", "target": "8749d5545c734a0589071d4dc9ef24f9ed72b5bd", "source_path": "huge_report.txt#chunk-0002", "target_path": "huge_report.txt#chunk-0006", "type": "SHARES_ENTITY", "weight": 0.734, "confidence": 0.8667, "evidence": "semantic=0.705; keyword=0.707; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, mitigation, report discusses; shared_entities=Acme, Priya, Section"}, {"source": "8749d5545c734a0589071d4dc9ef24f9ed72b5bd", "target": "34cbf797874356c72f0929daf5f54a44f5711158", "source_path": "huge_report.txt#chunk-0006", "target_path": "huge_report.txt#chunk-0010", "type": "SHARES_ENTITY", "weight": 0.733, "confidence": 0.8657, "evidence": "semantic=0.703; keyword=0.707; topic_overlap=1.000; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, mitigation, report discusses; shared_entities=Acme, Priya, Section"}, {"source": "a290071ed3c19b90dd71704acaaae0b0607b6617", "target": "506c04a15d439f9e097b6dd6bdaab72fa84c970b", "source_path": "huge_report.txt#chunk-0008", "target_path": "huge_report.txt#chunk-0011", "type": "SHARES_ENTITY", "weight": 0.7192, "confidence": 0.8524, "evidence": "semantic=0.807; keyword=0.727; topic_overlap=0.333; entity_overlap=1.000; shared_topics=delivery, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "12db2ff2fc476825131197cfa9f449f68bc6a943", "target": "a290071ed3c19b90dd71704acaaae0b0607b6617", "source_path": "huge_report.txt#chunk-0003", "target_path": "huge_report.txt#chunk-0008", "type": "SHARES_ENTITY", "weight": 0.7168, "confidence": 0.85, "evidence": "semantic=0.729; keyword=0.708; topic_overlap=0.714; entity_overlap=1.000; shared_topics=delivery, impact, schedule, shipment, update evidence; shared_entities=Acme, Priya, Section"}, {"source": "1d293563eac3908a3010aad7ca13db1b06172e35", "target": "4c9caef71e783399c28f36cdc7a31771842cfd55", "source_path": "huge_report.txt#chunk-0004", "target_path": "huge_report.txt#chunk-0007", "type": "SHARES_ENTITY", "weight": 0.7162, "confidence": 0.8494, "evidence": "semantic=0.728; keyword=0.708; topic_overlap=0.714; entity_overlap=1.000; shared_topics=delivery, impact, schedule, shipment, update evidence; shared_entities=Acme, Priya, Section"}, {"source": "dba0b3cdd9b488ae4a4613002aba53576344798b", "target": "8749d5545c734a0589071d4dc9ef24f9ed72b5bd", "source_path": "huge_report.txt#chunk-0005", "target_path": "huge_report.txt#chunk-0006", "type": "SHARES_ENTITY", "weight": 0.7116, "confidence": 0.8446, "evidence": "semantic=0.750; keyword=0.736; topic_overlap=0.500; entity_overlap=1.000; shared_topics=delivery, evidence report, impact, shipment; shared_entities=Acme, Priya, Section"}, {"source": "8749d5545c734a0589071d4dc9ef24f9ed72b5bd", "target": "4c9caef71e783399c28f36cdc7a31771842cfd55", "source_path": "huge_report.txt#chunk-0006", "target_path": "huge_report.txt#chunk-0007", "type": "SHARES_ENTITY", "weight": 0.708, "confidence": 0.8408, "evidence": "semantic=0.773; keyword=0.747; topic_overlap=0.333; entity_overlap=1.000; shared_topics=delivery, impact, shipment; shared_entities=Acme, Priya, Section"}, {"source": "fa8efa79dc0e0a7ab01829753ed02ea89124e9f7", "target": "a290071ed3c19b90dd71704acaaae0b0607b6617", "source_path": "huge_report.txt#chunk-0001", "target_path": "huge_report.txt#chunk-0008", "type": "SHARES_ENTITY", "weight": 0.7074, "confidence": 0.8401, "evidence": "semantic=0.744; keyword=0.729; topic_overlap=0.500; entity_overlap=1.000; shared_topics=delivery, impact, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "12db2ff2fc476825131197cfa9f449f68bc6a943", "target": "6067246d9edd72618e2b1127bcdbf84401bc784f", "source_path": "huge_report.txt#chunk-0003", "target_path": "huge_report.txt#chunk-0009", "type": "SHARES_ENTITY", "weight": 0.7073, "confidence": 0.84, "evidence": "semantic=0.709; keyword=0.707; topic_overlap=0.714; entity_overlap=1.000; shared_topics=delivery, impact, schedule, shipment, update evidence; shared_entities=Acme, Priya, Section"}, {"source": "fa8efa79dc0e0a7ab01829753ed02ea89124e9f7", "target": "506c04a15d439f9e097b6dd6bdaab72fa84c970b", "source_path": "huge_report.txt#chunk-0001", "target_path": "huge_report.txt#chunk-0011", "type": "SHARES_ENTITY", "weight": 0.7064, "confidence": 0.839, "evidence": "semantic=0.768; keyword=0.749; topic_overlap=0.333; entity_overlap=1.000; shared_topics=delivery, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "fa8efa79dc0e0a7ab01829753ed02ea89124e9f7", "target": "43eeaf2b12bc67ed6299ff09a1a30738616a35e5", "source_path": "huge_report.txt#chunk-0001", "target_path": "huge_report.txt#chunk-0002", "type": "SHARES_ENTITY", "weight": 0.706, "confidence": 0.8386, "evidence": "semantic=0.762; keyword=0.759; topic_overlap=0.333; entity_overlap=1.000; shared_topics=delivery, impact, shipment; shared_entities=Acme, Priya, Section"}, {"source": "1d293563eac3908a3010aad7ca13db1b06172e35", "target": "506c04a15d439f9e097b6dd6bdaab72fa84c970b", "source_path": "huge_report.txt#chunk-0004", "target_path": "huge_report.txt#chunk-0011", "type": "SHARES_ENTITY", "weight": 0.705, "confidence": 0.8376, "evidence": "semantic=0.777; keyword=0.727; topic_overlap=0.333; entity_overlap=1.000; shared_topics=delivery, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "fa8efa79dc0e0a7ab01829753ed02ea89124e9f7", "target": "1d293563eac3908a3010aad7ca13db1b06172e35", "source_path": "huge_report.txt#chunk-0001", "target_path": "huge_report.txt#chunk-0004", "type": "SHARES_ENTITY", "weight": 0.7028, "confidence": 0.8351, "evidence": "semantic=0.734; keyword=0.729; topic_overlap=0.500; entity_overlap=1.000; shared_topics=delivery, impact, schedule, shipment; shared_entities=Acme, Priya, Section"}, {"source": "43eeaf2b12bc67ed6299ff09a1a30738616a35e5", "target": "12db2ff2fc476825131197cfa9f449f68bc6a943", "source_path": "huge_report.txt#chunk-0002", "target_path": "huge_report.txt#chunk-0003", "type": "SHARES_ENTITY", "weight": 0.6989, "confidence": 0.8307, "evidence": "semantic=0.753; keyword=0.747; topic_overlap=0.333; entity_overlap=1.000; shared_topics=delivery, impact, shipment; shared_entities=Acme, Priya, Section"}, {"source": "c74c4f3687126aa136ffb24b55f8b4a028e557ae", "target": "87a5bbbb927a05fe88fe9124c6d3c8b95cc875ee", "source_path": "delay_report.txt", "target_path": "huge_report.txt", "type": "SHARES_ENTITY", "weight": 0.2547, "confidence": 0.1232, "evidence": "semantic=0.264; keyword=0.264; topic_overlap=0.000; entity_overlap=0.500; shared_entities=Acme, Priya"}]};
+    const width = () => document.querySelector("main").clientWidth;
+    const height = () => window.innerHeight;
+    const svg = d3.select("#graph");
+    const tooltip = d3.select("#tooltip");
+    const details = document.getElementById("details");
+    const typeColors = new Map([
+      ["REFERENCES", "#2563eb"],
+      ["SHARES_ENTITY", "#0f766e"],
+      ["SHARES_TOPIC", "#9333ea"],
+      ["SEMANTICALLY_SIMILAR", "#d97706"],
+      ["CONTAINS", "#475467"],
+    ]);
+    const fallbackColor = "#64748b";
+
+    document.getElementById("nodeCount").textContent = graph.nodes.length;
+    document.getElementById("edgeCount").textContent = graph.links.length;
+
+    const types = Array.from(new Set(graph.links.map(d => d.type))).sort();
+    const typeFilter = document.getElementById("typeFilter");
+    for (const type of types) {
+      const option = document.createElement("option");
+      option.value = type;
+      option.textContent = type;
+      typeFilter.appendChild(option);
+    }
+    document.getElementById("legend").innerHTML = types.map(type => `
+      <div class="legend"><span class="swatch" style="background:${typeColors.get(type) || fallbackColor}"></span>${type}</div>
+    `).join("");
+
+    const zoomLayer = svg.append("g");
+    const linkLayer = zoomLayer.append("g");
+    const nodeLayer = zoomLayer.append("g");
+    const labelLayer = zoomLayer.append("g");
+
+    svg.call(d3.zoom().scaleExtent([0.15, 5]).on("zoom", event => {
+      zoomLayer.attr("transform", event.transform);
+    }));
+
+    const simulation = d3.forceSimulation(graph.nodes)
+      .force("link", d3.forceLink(graph.links).id(d => d.id).distance(d => 95 - d.weight * 45).strength(d => 0.25 + d.weight * 0.55))
+      .force("charge", d3.forceManyBody().strength(d => -70 - d.degree * 8))
+      .force("center", d3.forceCenter(width() / 2, height() / 2))
+      .force("collision", d3.forceCollide().radius(d => radius(d) + 5));
+
+    const links = linkLayer.selectAll("line")
+      .data(graph.links)
+      .join("line")
+      .attr("class", "link")
+      .attr("stroke", d => typeColors.get(d.type) || fallbackColor)
+      .attr("stroke-width", d => 0.8 + d.weight * 3)
+      .on("click", showEdge);
+
+    const nodes = nodeLayer.selectAll("circle")
+      .data(graph.nodes)
+      .join("circle")
+      .attr("class", "node")
+      .attr("r", radius)
+      .attr("fill", d => nodeColor(d))
+      .call(drag(simulation))
+      .on("mouseover", showTooltip)
+      .on("mousemove", moveTooltip)
+      .on("mouseout", hideTooltip)
+      .on("click", showNode);
+
+    const labels = labelLayer.selectAll("text")
+      .data(graph.nodes.filter(d => d.degree >= 3))
+      .join("text")
+      .attr("class", "label")
+      .text(d => d.path);
+
+    simulation.on("tick", () => {
+      links
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+      nodes
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+
+      labels
+        .attr("x", d => d.x + radius(d) + 3)
+        .attr("y", d => d.y + 3);
+    });
+
+    document.getElementById("search").addEventListener("input", applyFilters);
+    typeFilter.addEventListener("change", applyFilters);
+    applyFilters();
+
+    function radius(d) {
+      return Math.max(5, Math.min(20, 5 + Math.sqrt(d.degree) * 3));
+    }
+
+    function nodeColor(d) {
+      if (d.node_type === "Chunk") return "#7c3aed";
+      if (d.degree >= 8) return "#be123c";
+      if (d.degree >= 5) return "#0f766e";
+      if (d.degree >= 3) return "#2563eb";
+      return "#64748b";
+    }
+
+    function applyFilters() {
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      const selectedType = typeFilter.value;
+      const visibleNodeIds = new Set();
+
+      links.classed("hidden", d => {
+        const typeOk = selectedType === "ALL" || d.type === selectedType;
+        const textOk = !q || d.source.path.toLowerCase().includes(q) || d.target.path.toLowerCase().includes(q);
+        const visible = typeOk && textOk;
+        if (visible) {
+          visibleNodeIds.add(d.source.id);
+          visibleNodeIds.add(d.target.id);
+        }
+        return !visible;
+      });
+
+      if (!q && selectedType === "ALL") {
+        graph.nodes.forEach(d => visibleNodeIds.add(d.id));
+      }
+
+      nodes.classed("hidden", d => !visibleNodeIds.has(d.id));
+      labels.classed("hidden", d => !visibleNodeIds.has(d.id));
+      document.getElementById("visibleNodeCount").textContent = visibleNodeIds.size;
+      document.getElementById("visibleEdgeCount").textContent = graph.links.filter(d => {
+        const typeOk = selectedType === "ALL" || d.type === selectedType;
+        const textOk = !q || d.source.path.toLowerCase().includes(q) || d.target.path.toLowerCase().includes(q);
+        return typeOk && textOk;
+      }).length;
+    }
+
+    function showTooltip(event, d) {
+      tooltip.style("display", "block").html(`<strong>${d.path}</strong><br/>degree: ${d.degree}<br/>topics: ${d.topics.join(", ") || "n/a"}`);
+      moveTooltip(event);
+    }
+
+    function moveTooltip(event) {
+      tooltip.style("left", `${event.pageX + 12}px`).style("top", `${event.pageY + 12}px`);
+    }
+
+    function hideTooltip() {
+      tooltip.style("display", "none");
+    }
+
+    function showNode(event, d) {
+      details.textContent =
+        `File: ${d.path}\n` +
+        `Type: ${d.node_type || "File"}\n` +
+        `Degree: ${d.degree}\n\n` +
+        `Keywords:\n${(d.keywords || []).join(", ") || "n/a"}\n\n` +
+        `Topics:\n${(d.topics || []).join(", ") || "n/a"}\n\n` +
+        `Entities:\n${(d.entities || []).join(", ") || "n/a"}`;
+    }
+
+    function showEdge(event, d) {
+      details.textContent =
+        `Relationship: ${d.type}\n` +
+        `Source: ${d.source_path}\n` +
+        `Target: ${d.target_path}\n` +
+        `Weight: ${d.weight}\n` +
+        `Confidence: ${d.confidence}\n\n` +
+        `Evidence:\n${d.evidence}`;
+    }
+
+    function drag(simulation) {
+      function dragstarted(event) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+      }
+      function dragged(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+      }
+      function dragended(event) {
+        if (!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+      }
+      return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
+    }
+
+    window.addEventListener("resize", () => {
+      simulation.force("center", d3.forceCenter(width() / 2, height() / 2));
+      simulation.alpha(0.3).restart();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+{"query":"what caused the project delay?","expected_files":["vendor_delay.txt","project_timeline.txt","report_summary.txt"],"expected_terms":["Acme Supplies","shipment","beta release"]}
+{"query":"who updated the timeline after the delay?","expected_files":["project_timeline.txt","report_summary.txt"],"expected_terms":["Priya","timeline"]}
+{"query":"what notes discuss cloud compute budget?","expected_files":["budget_notes.txt"],"expected_terms":["cloud compute","GPU budget"]}

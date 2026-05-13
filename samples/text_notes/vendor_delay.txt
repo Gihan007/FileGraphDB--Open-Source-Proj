@@ -1,0 +1,2 @@
+Acme Supplies confirmed that the hardware shipment would arrive late.
+The supplier delay affected the launch plan and caused the beta release to move.

@@ -1,0 +1,33 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build and packaging output
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# FileGraphDB generated databases
+.filegraphdb.sqlite
+**/.filegraphdb.sqlite
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS noise
+.DS_Store
+Thumbs.db
+*.code-workspace

@@ -1,0 +1,2 @@
+The budget review focused on cloud compute, model hosting, and storage costs.
+The finance team asked for a smaller GPU budget next quarter.
