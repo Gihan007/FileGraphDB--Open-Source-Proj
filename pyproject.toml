@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "filegraphdb"
-version = "0.1.2"
+version = "0.1.3"
 description = "A local file-native graph layer for relationship-aware text retrieval."
 readme = "README.md"
 requires-python = ">=3.9"
