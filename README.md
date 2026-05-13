@@ -1,3 +1,8 @@
+## Want To Help With Advanced Development?
+
+If you want to work on the next advanced features, please start with [ROADMAP.md](ROADMAP.md). It lists beginner, intermediate, and advanced contribution ideas such as document loaders, embedding cache, better retrieval ranking, vector index support, GitHub Actions, and PyPI release automation. After choosing an idea, check the [Issues](https://github.com/Gihan007/FileGraphDB--Open-Source-Proj/issues) page or open a new issue to discuss your approach before starting. Suggestions, feedback, and alternative ideas are welcome.
+
+
 # FileGraphDB
 
 FileGraphDB is a local Python library that turns a folder of files into a relationship graph for LLM and RAG workflows.
